@@ -29,6 +29,15 @@
         .popup-name { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
         .popup-price { color: #e74c3c; font-size: 16px; font-weight: bold; margin-bottom: 4px; }
         .popup-detail { font-size: 12px; color: #666; line-height: 1.6; }
+        .zone-label {
+            background: rgba(255,255,255,0.85) !important;
+            border: none !important;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15) !important;
+            font-size: 13px !important;
+            font-weight: bold !important;
+            padding: 3px 8px !important;
+            border-radius: 4px !important;
+        }
     </style>
 </head>
 <body>
@@ -139,6 +148,92 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(map);
 
+// 片区边界多边形（WGS-84坐标，已转换）
+// 高新一期：南二环以南，科技路以北，太白路以东，丈八北路/唐延路以西
+// 高新二期：科技路以南，绕城以北，西三环以东
+// 高新三期/CID：西太路以西，丝路科学城
+// 软东：西三环以东，鱼化寨片区
+// 软西：西三环以西，软件新城
+const zones = [
+    {
+        name: '高新一期',
+        color: '#e74c3c',
+        coords: [
+            [34.249, 108.868], [34.249, 108.900], [34.245, 108.900],
+            [34.240, 108.898], [34.230, 108.898], [34.225, 108.896],
+            [34.222, 108.895], [34.222, 108.868], [34.230, 108.862],
+            [34.240, 108.856], [34.245, 108.860], [34.249, 108.868]
+        ]
+    },
+    {
+        name: '高新二期',
+        color: '#3498db',
+        coords: [
+            [34.222, 108.860], [34.222, 108.898], [34.218, 108.900],
+            [34.214, 108.902], [34.208, 108.902], [34.200, 108.900],
+            [34.192, 108.898], [34.185, 108.895], [34.175, 108.892],
+            [34.168, 108.890], [34.168, 108.860], [34.175, 108.858],
+            [34.185, 108.858], [34.195, 108.858], [34.205, 108.858],
+            [34.215, 108.858], [34.222, 108.860]
+        ]
+    },
+    {
+        name: '高新三期',
+        color: '#2ecc71',
+        coords: [
+            [34.200, 108.810], [34.200, 108.845], [34.185, 108.850],
+            [34.170, 108.855], [34.155, 108.855], [34.145, 108.850],
+            [34.140, 108.835], [34.140, 108.810], [34.150, 108.800],
+            [34.165, 108.795], [34.180, 108.798], [34.190, 108.802],
+            [34.200, 108.810]
+        ]
+    },
+    {
+        name: '软东',
+        color: '#f39c12',
+        coords: [
+            [34.235, 108.845], [34.235, 108.868], [34.230, 108.868],
+            [34.222, 108.862], [34.215, 108.858], [34.215, 108.845],
+            [34.220, 108.842], [34.228, 108.842], [34.235, 108.845]
+        ]
+    },
+    {
+        name: '软西',
+        color: '#9b59b6',
+        coords: [
+            [34.235, 108.815], [34.235, 108.845], [34.228, 108.845],
+            [34.222, 108.845], [34.215, 108.845], [34.210, 108.845],
+            [34.205, 108.845], [34.200, 108.840], [34.200, 108.815],
+            [34.210, 108.812], [34.220, 108.812], [34.230, 108.815],
+            [34.235, 108.815]
+        ]
+    }
+];
+
+let zoneLayers = [];
+function renderZones(filter) {
+    zoneLayers.forEach(l => map.removeLayer(l));
+    zoneLayers = [];
+
+    const show = filter === 'all' ? zones : zones.filter(z => z.name === filter);
+    show.forEach(z => {
+        const polygon = L.polygon(z.coords, {
+            color: z.color,
+            weight: 2,
+            opacity: 0.6,
+            fillColor: z.color,
+            fillOpacity: 0.08,
+            dashArray: '6, 4'
+        }).addTo(map);
+        polygon.bindTooltip(z.name, {
+            permanent: filter === 'all',
+            direction: 'center',
+            className: 'zone-label'
+        });
+        zoneLayers.push(polygon);
+    });
+}
+
 let circles = [];
 let currentFilter = 'all';
 
@@ -191,9 +286,11 @@ function toggleFilter(filter) {
                          btn.textContent.includes(filter.replace('高新', ''));
         btn.classList.toggle('active', isActive);
     });
+    renderZones(filter);
     renderMarkers(filter);
 }
 
+renderZones('all');
 renderMarkers('all');
 </script>
 </body>
